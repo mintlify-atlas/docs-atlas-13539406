@@ -1,0 +1,172 @@
+---
+title: "Layout system: wrapping pages with named layouts"
+description: "Oiyo's layout system lets each page declare a named layout via definePageMeta. App.vue hosts the active layout using OiyoLayout and OiyoPage components."
+---
+
+Oiyo uses a three-tier rendering model: **App.vue** sits at the root and provides app-level chrome, a **layout** wraps the active page with shared structural UI, and a **page** component supplies route-specific content. This separation keeps your page components lean—each one only handles its own data and template—while layouts handle chrome that multiple pages share, such as a tab bar or persistent header.
+
+## How layouts are discovered
+
+Oiyo auto-discovers every `.vue` file inside `src/layouts/` and registers it as a named layout. The name is derived directly from the filename:
+
+| File | Layout name |
+|---|---|
+| `src/layouts/default.vue` | `"default"` |
+| `src/layouts/tabbar.vue` | `"tabbar"` |
+| `src/layouts/auth.vue` | `"auth"` |
+
+No plugin configuration or explicit import is required—dropping a file into `src/layouts/` is enough.
+
+## App.vue: hosting the active layout
+
+`OiyoLayout` and `OiyoPage` are the two built-in components that wire the model together. `OiyoLayout` renders whichever layout the current page declared; `OiyoPage` renders the page itself inside that layout's `<slot />`.
+
+```vue App.vue
+<template>
+  <view class="min-h-screen box-border bg-[linear-gradient(180deg,#eef4ff_0%,#f7f9fc_100%)] p-[28rpx]">
+    <!-- app-level content -->
+    <OiyoLayout>
+      <view class="mt-[24rpx] rounded-[24rpx] border-[2rpx] border-solid border-[#c8d7ff] bg-[rgba(255,255,255,0.9)] p-[20rpx] shadow-[0_16rpx_36rpx_rgba(61,104,255,0.08)]">
+        <view class="rounded-[18rpx] bg-[#edf2ff] px-[20rpx] py-[18rpx] text-[24rpx] text-[#5870b3]">
+          <text>下面区域由当前 layout 承载 page 内容</text>
+        </view>
+        <OiyoPage />
+      </view>
+    </OiyoLayout>
+  </view>
+</template>
+```
+
+## Built-in layouts
+
+### default.vue
+
+`default.vue` is the fallback layout. Any page that does not explicitly declare a layout is wrapped by this file.
+
+```vue src/layouts/default.vue
+<template>
+  <view class="mt-[24rpx] rounded-[24rpx] border-[2rpx] border-dashed border-[#8cb6ff] bg-[#f8fbff] p-[24rpx]">
+    <view class="rounded-[20rpx] bg-[#eaf3ff] p-[20rpx]">
+      <text class="block text-[22rpx] text-[#2474ff] font-700 tracking-[4rpx]">
+        LAYOUT
+      </text>
+      <text class="mt-[8rpx] block text-[34rpx] text-[#12315f] font-700">
+        default.vue
+      </text>
+      <text class="mt-[10rpx] block text-[24rpx] text-[#4c6288] leading-[1.6]">
+        默认布局，负责包裹没有自定义布局的页面。
+      </text>
+    </view>
+    <view class="mt-[20rpx]">
+      <slot />
+    </view>
+  </view>
+</template>
+```
+
+### tabbar.vue
+
+`tabbar.vue` is the layout for main tab entry pages such as the home page. It carries tab-bar navigation semantics and a distinct visual treatment.
+
+```vue src/layouts/tabbar.vue
+<template>
+  <view class="mt-[24rpx] rounded-[24rpx] border-[2rpx] border-dashed border-[#7fd4bf] bg-[#f3fffb] p-[24rpx]">
+    <view class="rounded-[20rpx] bg-[#ddfbf2] p-[20rpx]">
+      <text class="block text-[22rpx] text-[#0d8f6d] font-700 tracking-[4rpx]">
+        LAYOUT
+      </text>
+      <text class="mt-[8rpx] block text-[34rpx] text-[#105246] font-700">
+        tabbar.vue
+      </text>
+      <text class="mt-[10rpx] block text-[24rpx] text-[#43786c] leading-[1.6]">
+        带底部导航语义的布局，用于主页这类主入口页面。
+      </text>
+    </view>
+
+    <view class="mt-[20rpx]">
+      <slot />
+    </view>
+  </view>
+</template>
+```
+
+## How a page declares its layout
+
+Each page calls `definePageMeta` at the top of its `<script setup>` block. The `layout` field names the layout to use.
+
+<Tabs>
+  <Tab title="With layout declared">
+`src/pages/home/index.vue` opts into the `tabbar` layout:
+
+```vue src/pages/home/index.vue
+<script setup>
+import { onLoad, ref } from '@skiyee/oiyo/runtime'
+
+definePageMeta({
+  layout: 'tabbar',
+  style: {
+    navigationBarTitleText: '首页 - Oiyo',
+  },
+})
+
+onLoad(() => {
+  console.log('Page Load')
+})
+
+const title = ref('Hello')
+
+function jump() {
+  uni.navigateTo({ url: '/pages/my/index' })
+}
+</script>
+```
+
+At runtime, `OiyoLayout` renders `tabbar.vue` and the page content appears inside its `<slot />`.
+  </Tab>
+  <Tab title="Without layout declaration">
+`src/pages/my/index.vue` omits the `layout` field entirely:
+
+```vue src/pages/my/index.vue
+<script setup>
+definePageMeta({
+  style: {
+    navigationBarTitleText: '我的 - Oiyo',
+  },
+})
+</script>
+```
+
+Because no `layout` is specified, Oiyo automatically falls back to `default.vue`. The page is still wrapped—just by the default layout instead of a named one.
+  </Tab>
+</Tabs>
+
+## Creating a custom layout
+
+<Steps>
+  <Step title="Create the layout file">
+    Add a new `.vue` file to `src/layouts/`. The filename becomes the layout name.
+
+    ```vue src/layouts/dashboard.vue
+    <template>
+      <view>
+        <!-- shared dashboard chrome -->
+        <slot />
+      </view>
+    </template>
+    ```
+  </Step>
+  <Step title="Declare the layout in your page">
+    Reference the layout by its filename (without `.vue`) inside `definePageMeta`:
+
+    ```vue src/pages/dashboard/index.vue
+    <script setup>
+    definePageMeta({
+      layout: 'dashboard',
+    })
+    </script>
+    ```
+  </Step>
+  <Step title="Verify the render tree">
+    Run `oiyo dev` and navigate to the page. The three-tier hierarchy should read: `App.vue` → `dashboard.vue` → your page component.
+  </Step>
+</Steps>

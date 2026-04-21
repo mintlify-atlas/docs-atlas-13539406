@@ -1,0 +1,169 @@
+---
+title: "Runtime API: all exports from @skiyee/oiyo/runtime"
+description: "Complete reference for @skiyee/oiyo/runtime: createSSRApp, defineRootContext, definePageMeta, OiyoLayout, OiyoPage, and re-exported Vue primitives."
+---
+
+The `@skiyee/oiyo/runtime` package exposes the full Oiyo runtime API—app creation, root context, page metadata, layout components, and re-exported Vue reactivity primitives. Import everything your app needs from this single entry point instead of reaching into `vue` or `@dcloudio/uni-app` directly.
+
+---
+
+## createSSRApp
+
+Creates the UniApp SSR application instance. Call this inside `createApp()` in `main.ts` and return `{ app }`.
+
+<ParamField path="rootComponent" type="Component" required>
+  The root Vue component—always your `App.vue`.
+</ParamField>
+
+```typescript main.ts
+import { createSSRApp } from '@skiyee/oiyo/runtime'
+
+import App from './App.vue'
+
+import 'uno.css'
+
+export function createApp() {
+  const app = createSSRApp(App)
+  return {
+    app,
+  }
+}
+```
+
+**Returns** `{ app: App }` — the Vue application instance wrapped for UniApp's SSR hydration model.
+
+---
+
+## defineRootContext
+
+Defines a reactive context at the application root (`App.vue`) and makes it available to every descendant component. Call it once in `App.vue`; consume the returned object anywhere in the component tree.
+
+<ParamField path="factory" type="() => Record<string, any>" required>
+  A factory function that returns a plain object of reactive values and functions. Oiyo wraps the return value so it is reactive across the entire app.
+</ParamField>
+
+**Returns** the object returned by `factory`, fully reactive.
+
+```vue App.vue
+<script setup lang="ts">
+import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+const { title, count, increment } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  const count = ref(2)
+
+  function increment() {
+    count.value += 3
+  }
+
+  return { title, count, increment }
+})
+
+onLaunch(() => {
+  console.log('App Launch, title:', title.value)
+})
+</script>
+```
+
+<Note>
+  `defineRootContext` is called once in `App.vue` with a factory function. Pages and layouts that need access to the shared state call it to retrieve the same reactive object. `defineRootContext` is a compiler macro registered as a global by `OiyoPlugin`—it does not need to be imported.
+</Note>
+
+---
+
+## definePageMeta
+
+A compiler macro that annotates a page SFC with its layout and navigation bar style. OiyoPlugin transforms this call at build time—it never appears in the compiled output.
+
+<ParamField path="options" type="object" required>
+  Configuration object for the page.
+</ParamField>
+
+<ParamField path="options.layout" type="string">
+  Name of the layout to wrap this page. Must match a file in `src/layouts/`. Omit to use the default layout.
+</ParamField>
+
+<ParamField path="options.style" type="object">
+  UniApp page style object—maps directly to the `style` field in `pages.json` (e.g. `navigationBarTitleText`, `enablePullDownRefresh`).
+</ParamField>
+
+```vue pages/home/index.vue
+<script setup>
+import { onLoad, ref } from '@skiyee/oiyo/runtime'
+
+definePageMeta({
+  layout: 'tabbar',
+  style: {
+    navigationBarTitleText: '首页 - Oiyo',
+  },
+})
+
+onLoad(() => {
+  console.log('Page Load')
+})
+
+const title = ref('Hello')
+</script>
+```
+
+<Tip>
+  A page with no `layout` key falls back to the default layout, as shown in `pages/my/index.vue`.
+</Tip>
+
+---
+
+## OiyoLayout
+
+A global component rendered in `App.vue`'s template. It resolves the active layout for the current route and renders it, threading page content through its default slot.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| — | — | No props. Layout resolution is automatic. |
+
+**Slot**: `default` — wraps the layout's rendered output.
+
+```vue App.vue (template excerpt)
+<template>
+  <OiyoLayout>
+    <view class="...">
+      <OiyoPage />
+    </view>
+  </OiyoLayout>
+</template>
+```
+
+<Note>
+  You do not import `OiyoLayout`. OiyoPlugin registers it as a global component during build.
+</Note>
+
+---
+
+## OiyoPage
+
+Renders the active page's content inside the current layout. Place it inside the layout template (or inside `<OiyoLayout>`'s slot in `App.vue`) exactly once.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| — | — | No props. |
+
+```vue App.vue (template excerpt)
+<OiyoLayout>
+  <view class="...">
+    <OiyoPage />
+  </view>
+</OiyoLayout>
+```
+
+---
+
+## Re-exported Vue primitives
+
+Oiyo re-exports Vue 3's full reactivity API and UniApp's composition hooks from `@skiyee/oiyo/runtime`. Always import from this path in Oiyo projects.
+
+```typescript
+import { ref, onLaunch, onLoad } from '@skiyee/oiyo/runtime'
+```
+
+Key re-exports include: `ref`, `reactive`, `computed`, `watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `toRef`, `toRefs`, `readonly`, `shallowRef`, `markRaw`, and all UniApp lifecycle hooks (`onLaunch`, `onShow`, `onHide`, `onLoad`, `onReady`, `onUnload`).
+
+See [Composables and reactive utilities](/api/composables) and [Lifecycle hooks](/api/lifecycle) for detailed examples.

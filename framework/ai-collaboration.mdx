@@ -1,0 +1,101 @@
+---
+title: "AI-assisted development with Oiyo's conventions"
+description: "Oiyo is designed for AI-assisted development. Its conventions and typed APIs make the codebase predictable so tools like Cursor generate correct code."
+---
+
+Oiyo is explicitly designed for AI-collaborative development. Its consistent conventions, full TypeScript support, and predictable project structure mean that AI coding tools—Cursor, GitHub Copilot, Claude—can understand and generate Oiyo code correctly without hallucinating project-specific APIs. When a codebase has well-known patterns, AI tools spend less effort guessing and more effort producing accurate output.
+
+## Why conventions reduce AI error
+
+AI models generate better code when the surface area of possible answers is small. In a plain UniApp project, a page might be registered manually in `pages.json`, defined with a custom layout wrapper, and initialized with app-level state in a variety of ways. Each ambiguity is a point where an AI tool can produce plausible-looking but incorrect code.
+
+Oiyo removes that ambiguity:
+
+- **Auto-routing** means there is exactly one place to create a page: `src/pages/`. The AI always knows where to put it.
+- **Layout system** means there is exactly one convention for layouts: `src/layouts/`. The AI doesn't need to infer wrapper patterns.
+- **`defineRootContext`** has a typed signature and always lives in `App.vue`. The AI knows what options are valid and where to look.
+- **`definePageMeta`** is a typed macro the AI can call with confidence because TypeScript will catch incorrect usage.
+
+<Info>
+  The fewer project-specific conventions an AI tool must infer, the less likely it is to produce code that is structurally correct but functionally wrong.
+</Info>
+
+## Practical tips for AI-assisted Oiyo development
+
+### Provide project structure as context
+
+When starting a session with an AI tool, paste your directory tree or a brief description of the project layout. An AI that knows you have `src/pages/`, `src/layouts/`, and `src/composables/` will generate imports and file placements correctly.
+
+<Tip>
+  In Cursor, add a `.cursorrules` file at the project root describing Oiyo's conventions (auto-routing, layout naming, `defineRootContext` location). The model will apply these rules to every suggestion in the project.
+</Tip>
+
+### Use typed imports from @skiyee/oiyo/runtime
+
+    Always import Oiyo's runtime utilities from the typed entry point. This gives the AI (and your IDE) accurate type information:
+
+    ```typescript
+    import { createSSRApp, onLaunch, onLoad, ref } from '@skiyee/oiyo/runtime'
+    ```
+
+    Note: `defineRootContext` and `definePageMeta` are compiler macros registered as globals by `OiyoPlugin`—they do not need to be imported. Avoid importing from internal sub-paths; those are not part of the public API.
+
+### Keep defineRootContext in App.vue
+
+`defineRootContext` is the Oiyo equivalent of a Nuxt plugin or Next.js `_app.tsx`. AI tools trained on those frameworks will correctly associate `App.vue` with app-level initialization when you use this convention consistently.
+
+    ```vue App.vue
+    <script setup lang="ts">
+    import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+    const { title } = defineRootContext(() => {
+      const title = ref('Hello Oiyo')
+      return { title }
+    })
+
+    onLaunch(() => {
+      console.log('App Launch, title:', title.value)
+    })
+    </script>
+    ```
+
+<Note>
+  Moving `defineRootContext` to a different file is technically possible but breaks the convention AI tools rely on. Keep it in `App.vue`.
+</Note>
+
+## Setting up an AI tool for an Oiyo project
+
+<Steps>
+  <Step title="Install Cursor or configure your AI extension">
+    Download [Cursor](https://cursor.sh) or install the GitHub Copilot extension in VS Code. Both work well with Oiyo projects out of the box.
+  </Step>
+  <Step title="Add a .cursorrules file (Cursor users)">
+    Create `.cursorrules` at the project root with a brief description of Oiyo's conventions:
+
+    ```text .cursorrules
+    This is an Oiyo project (enhanced UniApp framework).
+    - Pages go in src/pages/ and are auto-routed by file path
+    - Layouts go in src/layouts/; default.vue is applied automatically
+    - App-level state uses defineRootContext() in App.vue
+    - Per-page metadata uses definePageMeta() in each page's <script setup>
+    - Import runtime utilities from @skiyee/oiyo/runtime
+    ```
+  </Step>
+  <Step title="Open the project with the full src/ directory in context">
+    Make sure your AI tool has access to the full `src/` tree, not just the file you are editing. Most AI tools include open editor tabs; use "add folder to context" options if available.
+  </Step>
+  <Step title="Ask the AI to scaffold a new page using Oiyo conventions">
+    Test the setup by asking: "Create a new page at src/pages/settings/index.vue with a title meta and the default layout." A correctly configured session will produce a file with `definePageMeta` and the right import path.
+  </Step>
+  <Step title="Enable TypeScript strict mode">
+    Ensure `strict: true` is set in `tsconfig.json`. Strict mode maximizes the type information available to both your IDE and AI tools, reducing the chance of incorrect suggestions slipping past the compiler.
+
+    ```json tsconfig.json
+    {
+      "compilerOptions": {
+        "strict": true
+      }
+    }
+    ```
+  </Step>
+</Steps>

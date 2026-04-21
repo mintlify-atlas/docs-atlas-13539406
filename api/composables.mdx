@@ -1,0 +1,179 @@
+---
+title: "Composables and reactive utilities in @skiyee/oiyo/runtime"
+description: "Oiyo re-exports Vue 3's core reactivity primitives from @skiyee/oiyo/runtime, providing ref, reactive, computed, and watch for use in pages and layouts."
+---
+
+Oiyo re-exports Vue 3's reactivity system from `@skiyee/oiyo/runtime` so you always import from one place. This ensures Oiyo's typed runtime wraps every reactive primitive correctly for UniApp—avoiding version conflicts and keeping your imports consistent across pages, layouts, and `App.vue`.
+
+<Warning>
+  Do not import directly from `vue` in an Oiyo project. Always use `@skiyee/oiyo/runtime`. Mixing import sources can cause reactivity breakage across the UniApp compiler pipeline.
+</Warning>
+
+```typescript
+import { ref, computed } from '@skiyee/oiyo/runtime'
+```
+
+---
+
+## ref
+
+Creates a reactive, mutable reference wrapping a single value. Access or mutate the value via `.value`.
+
+```typescript
+ref<T>(value: T): Ref<T>
+```
+
+```vue App.vue
+<script setup lang="ts">
+import { ref } from '@skiyee/oiyo/runtime'
+
+const { title, count } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  const count = ref(2)
+
+  return { title, count }
+})
+</script>
+```
+
+```vue pages/home/index.vue
+<script setup>
+import { ref } from '@skiyee/oiyo/runtime'
+
+const title = ref('Hello')
+</script>
+```
+
+---
+
+## reactive
+
+Creates a deeply reactive proxy of a plain object. Unlike `ref`, you access properties directly without `.value`.
+
+```typescript
+reactive<T extends object>(object: T): T
+```
+
+```typescript
+import { reactive } from '@skiyee/oiyo/runtime'
+
+const state = reactive({
+  count: 0,
+  name: 'Oiyo',
+})
+
+state.count++
+```
+
+<Tip>
+  Prefer `ref` for primitive values and `reactive` for objects with multiple related properties. Oiyo's `defineRootContext` factory works well with either.
+</Tip>
+
+---
+
+## computed
+
+Derives a read-only reactive value from other reactive sources. The getter re-runs automatically when its dependencies change.
+
+```typescript
+computed<T>(getter: () => T): ComputedRef<T>
+```
+
+```typescript
+import { computed, ref } from '@skiyee/oiyo/runtime'
+
+const count = ref(2)
+const doubled = computed(() => count.value * 2)
+
+console.log(doubled.value) // 4
+count.value = 5
+console.log(doubled.value) // 10
+```
+
+---
+
+## watch
+
+Watches one or more reactive sources and runs a callback whenever they change.
+
+```typescript
+watch(source, callback, options?)
+```
+
+```typescript
+import { ref, watch } from '@skiyee/oiyo/runtime'
+
+const count = ref(0)
+
+watch(count, (newValue, oldValue) => {
+  console.log(`count changed from ${oldValue} to ${newValue}`)
+})
+
+// With options
+watch(
+  count,
+  (newValue) => {
+    console.log('count:', newValue)
+  },
+  { immediate: true, deep: false }
+)
+```
+
+---
+
+## onMounted / onUnmounted
+
+Composition API lifecycle hooks for components and layouts. These are Vue's standard hooks, re-exported for use in Oiyo pages and layout components.
+
+```typescript
+import { onMounted, onUnmounted } from '@skiyee/oiyo/runtime'
+
+onMounted(() => {
+  console.log('Component mounted')
+})
+
+onUnmounted(() => {
+  console.log('Component unmounted — clean up side effects here')
+})
+```
+
+<Note>
+  `onMounted` and `onUnmounted` apply to Vue component lifecycle. For UniApp-specific page and app events—`onLoad`, `onLaunch`, `onShow`—see [Lifecycle hooks](/api/lifecycle).
+</Note>
+
+---
+
+## Full import reference
+
+All commonly used Vue reactivity primitives are available from `@skiyee/oiyo/runtime`:
+
+```typescript
+import {
+  // Core reactivity
+  ref,
+  reactive,
+  computed,
+  watch,
+  watchEffect,
+  readonly,
+  shallowRef,
+  toRef,
+  toRefs,
+  markRaw,
+  nextTick,
+
+  // Component lifecycle
+  onMounted,
+  onUnmounted,
+  onBeforeMount,
+  onBeforeUnmount,
+
+  // UniApp lifecycle (re-exported)
+  onLaunch,
+  onLoad,
+  onShow,
+  onHide,
+  onReady,
+  onUnload,
+} from '@skiyee/oiyo/runtime'
+```

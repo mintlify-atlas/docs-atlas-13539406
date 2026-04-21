@@ -1,0 +1,111 @@
+---
+title: "Root context: sharing app-level state across pages"
+description: "defineRootContext in App.vue creates reactive state that any page or layout can access—eliminating prop drilling and external stores for app-wide data."
+---
+
+UniApp applications often need to share data—a logged-in user, a feature flag, a UI counter—across pages and layouts that have no direct parent-child relationship. The conventional answers are prop drilling (impractical across page boundaries) or a dedicated global store like Pinia (boilerplate-heavy for simple state). `defineRootContext` is Oiyo's built-in answer: a factory function called once in `App.vue` that makes reactive state available app-wide without any store setup or provider component.
+
+## Defining root context in App.vue
+
+Call `defineRootContext` inside `App.vue`'s `<script setup>` block and pass it a factory function. The factory works exactly like Vue's `setup()`: you create refs, computed values, and functions, then return the ones you want to expose.
+
+```vue src/App.vue
+<script setup lang="ts">
+import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+const { title, count, increment } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  const count = ref(2)
+
+  function increment() {
+    count.value += 3
+  }
+
+  return { title, count, increment }
+})
+
+onLaunch(() => {
+  console.log('App Launch, title:', title.value)
+})
+</script>
+```
+
+`defineRootContext` returns the same object your factory returned, so you can destructure it directly in `App.vue` and use the values in its own template (the `{{ title }} / count: {{ count }}` display and the `+3` button in the source).
+
+## How pages and layouts consume root context
+
+Because `defineRootContext` returns the reactive object from its factory, `App.vue` can use those values in its own template directly. Pages and layouts access the same shared state through Oiyo's context injection—`defineRootContext` is a compiler macro that `OiyoPlugin` wires at build time so descendants receive the same reactive object defined in `App.vue`.
+
+The `App.vue` source shows the owner pattern: the factory is called once, and the returned refs (`title`, `count`, `increment`) are used directly in the template:
+
+```vue src/App.vue
+<script setup lang="ts">
+import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+const { title, count, increment } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  const count = ref(2)
+
+  function increment() {
+    count.value += 3
+  }
+
+  return { title, count, increment }
+})
+
+onLaunch(() => {
+  console.log('App Launch, title:', title.value)
+})
+</script>
+```
+
+<Note>
+`defineRootContext` is a compiler macro registered globally by `OiyoPlugin`. It does not need to be imported. Call it once in `App.vue` with a factory function; Oiyo makes the returned reactive object available throughout the component tree.
+</Note>
+
+## TypeScript inference
+
+The factory function's return type is inferred automatically. You do not need to annotate the context type manually.
+
+```typescript
+// Type of `title` is inferred as Ref<string>
+// Type of `count` is inferred as Ref<number>
+// Type of `increment` is inferred as () => void
+const { title, count, increment } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  const count = ref(2)
+
+  function increment() {
+    count.value += 3
+  }
+
+  return { title, count, increment }
+})
+```
+
+If you need to share the inferred type across files, extract it directly from the factory's return type:
+
+```typescript
+// In App.vue or a shared types file
+const ctx = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  const count = ref(2)
+  return { title, count }
+})
+
+export type RootContext = typeof ctx
+```
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="How is this different from Pinia?">
+    Pinia requires you to define a store in a separate file, register it with a plugin, and call `useStore()` in each consumer. `defineRootContext` lives directly in `App.vue` alongside your app lifecycle hooks—no plugin registration, no separate store file, no `storeToRefs` boilerplate. It is intentionally scoped to app-wide state that belongs in the root component. For complex domain state, isolated stores, or state that needs to persist independently of `App.vue`, Pinia remains the right tool.
+  </Accordion>
+  <Accordion title="Can layouts access root context?">
+    Yes. Because `defineRootContext` is wired by `OiyoPlugin` at the app level, layout components in `src/layouts/` can access the same reactive state. Layouts are part of the component tree that descends from `App.vue`, so they receive the root context automatically.
+  </Accordion>
+  <Accordion title="What happens if defineRootContext is called before App.vue initializes?">
+    Oiyo initializes the root context synchronously during `App.vue`'s `setup()`. Because `App.vue` is always the first component mounted, the context is guaranteed to exist before any page or layout setup function runs.
+  </Accordion>
+</AccordionGroup>

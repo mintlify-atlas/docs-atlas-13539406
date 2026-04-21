@@ -1,0 +1,96 @@
+---
+title: "Page meta: declaring layout and style in each SFC"
+description: "definePageMeta is a compiler macro that lets you set a page's layout, navigation bar title, and style options directly inside the SFC script block."
+---
+
+`definePageMeta` is a compiler macro—similar in concept to Nuxt's `definePageMeta`—that lets you co-locate a page's routing metadata with the component that owns it. Instead of maintaining a separate configuration file, you declare the layout the page should use and the UniApp style options it needs (navigation bar title, background color, and so on) directly inside the `<script setup>` block. At build time, `OiyoPlugin` reads these declarations and writes the corresponding entries to `pages.json`.
+
+## API reference
+
+<ParamField path="layout" type="string">
+  Name of the layout to wrap this page. Must exactly match the filename (without `.vue`) of a file in `src/layouts/`. Omitting this field causes the page to fall back to the `"default"` layout.
+</ParamField>
+
+<ParamField path="style" type="object">
+  UniApp page style options. Common fields include:
+
+  - `navigationBarTitleText` — text displayed in the navigation bar title.
+  - `navigationBarBackgroundColor` — hex background color of the navigation bar.
+  - `navigationBarTextStyle` — `"black"` or `"white"` for the navigation bar text and icons.
+  - `backgroundColor` — background color of the page window.
+  - `enablePullDownRefresh` — boolean; enables pull-to-refresh on this page.
+
+  See the [UniApp page style documentation](https://uniapp.dcloud.net.cn/collocation/pages.html#style) for the full list of supported fields.
+</ParamField>
+
+## Examples
+
+### Page with layout and style
+
+`src/pages/home/index.vue` declares both a layout and a navigation bar title:
+
+```vue src/pages/home/index.vue
+<script setup>
+import { onLoad, ref } from '@skiyee/oiyo/runtime'
+
+definePageMeta({
+  layout: 'tabbar',
+  style: {
+    navigationBarTitleText: '首页 - Oiyo',
+  },
+})
+
+onLoad(() => {
+  console.log('Page Load')
+})
+
+const title = ref('Hello')
+
+function jump() {
+  uni.navigateTo({ url: '/pages/my/index' })
+}
+</script>
+```
+
+`OiyoPlugin` writes `"layout": "tabbar"` and the `style` object into the corresponding entry in `pages.json`. At runtime `OiyoLayout` reads the layout name and renders `src/layouts/tabbar.vue` around the page.
+
+### Page with style only
+
+`src/pages/my/index.vue` sets only `style`, omitting `layout`:
+
+```vue src/pages/my/index.vue
+<script setup>
+definePageMeta({
+  style: {
+    navigationBarTitleText: '我的 - Oiyo',
+  },
+})
+</script>
+```
+
+Because `layout` is absent, Oiyo falls back to `src/layouts/default.vue`. The page is still wrapped by a layout—just the default one.
+
+## Layout fallback behavior
+
+<Tabs>
+  <Tab title="layout declared">
+    ```vue
+    definePageMeta({
+      layout: 'tabbar',   // renders src/layouts/tabbar.vue
+    })
+    ```
+    Oiyo resolves `'tabbar'` to `src/layouts/tabbar.vue` and renders it as the wrapping layout.
+  </Tab>
+  <Tab title="layout omitted">
+    ```vue
+    definePageMeta({
+      // no layout field
+    })
+    ```
+    Oiyo falls back to `src/layouts/default.vue` automatically. No explicit `layout: 'default'` declaration is needed.
+  </Tab>
+</Tabs>
+
+<Note>
+`definePageMeta` is a compile-time macro processed by `OiyoPlugin`. Do not call it conditionally, inside a function, or with a dynamically computed argument—it must appear as a top-level statement in `<script setup>` so the compiler can statically analyse it.
+</Note>

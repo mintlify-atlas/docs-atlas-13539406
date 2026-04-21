@@ -1,0 +1,108 @@
+---
+title: "Navigation guards: route protection patterns in Oiyo"
+description: "Oiyo's navigation guards intercept page transitions before they complete, letting you redirect unauthenticated users or apply access control logic."
+---
+
+Navigation guards are a first-class feature in Oiyo that run before page transitions complete. They let you protect routes — for example, redirecting to a login page when a user is not authenticated — or run shared setup logic before any page loads. Because `App.vue` owns the application-level lifecycle and global state in Oiyo, it is the natural place to configure guards.
+
+## How guards work in Oiyo
+
+In Oiyo, navigation protection is implemented by combining `onLaunch` (which fires once at app startup) with `uni.navigateTo` or `uni.redirectTo` to redirect users before they reach protected content. App-level lifecycle hooks in `App.vue` are the natural location for this logic—they run before any page renders and have access to the root context where auth state lives.
+
+## Registering guards in App.vue
+
+Guards are configured at app launch inside `App.vue`. Use `onLaunch` from `@skiyee/oiyo/runtime` to run guard setup once when the application starts:
+
+```typescript App.vue
+import { onLaunch } from '@skiyee/oiyo/runtime'
+
+// In App.vue <script setup>
+onLaunch(() => {
+  // Guards are typically configured at app launch
+})
+```
+
+## Practical auth guard example
+
+The pattern below reads a token from storage and redirects unauthenticated users to `/pages/login/index` before they reach any protected page.
+
+```typescript App.vue
+// Example navigation guard pattern in App.vue
+const isAuthenticated = ref(false)
+
+// Guard logic: redirect to login if not authenticated
+function setupGuards() {
+  // Intercept navigation using UniApp's page lifecycle
+  // or Oiyo's guard API when accessing protected pages
+}
+```
+
+A complete token-based example:
+
+```typescript App.vue
+import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+const { isAuthenticated } = defineRootContext(() => {
+  const isAuthenticated = ref(false)
+  return { isAuthenticated }
+})
+
+onLaunch(() => {
+  const token = uni.getStorageSync('token')
+  isAuthenticated.value = !!token
+
+  if (!token) {
+    uni.navigateTo({ url: '/pages/login/index' })
+  }
+})
+```
+
+## Setting up a simple auth guard
+
+<Steps>
+  <Step title="Define auth state in defineRootContext">
+    Declare a reactive `isAuthenticated` ref inside `defineRootContext` in `App.vue` so auth state is available to every page.
+
+    ```typescript App.vue
+    const { isAuthenticated } = defineRootContext(() => {
+      const isAuthenticated = ref(false)
+      return { isAuthenticated }
+    })
+    ```
+  </Step>
+  <Step title="Read the token on app launch">
+    Inside `onLaunch`, read the stored token and update `isAuthenticated`.
+
+    ```typescript App.vue
+    onLaunch(() => {
+      const token = uni.getStorageSync('token')
+      isAuthenticated.value = !!token
+    })
+    ```
+  </Step>
+  <Step title="Redirect unauthenticated users">
+    After setting the auth state, redirect to the login page when no token is present.
+
+    ```typescript App.vue
+    onLaunch(() => {
+      const token = uni.getStorageSync('token')
+      isAuthenticated.value = !!token
+
+      if (!token) {
+        uni.navigateTo({ url: '/pages/login/index' })
+      }
+    })
+    ```
+  </Step>
+  <Step title="Consume auth state in pages">
+    Use `defineRootContext` in any page to read the shared `isAuthenticated` value and conditionally show or hide protected content.
+  </Step>
+</Steps>
+
+<Warning>
+  The pattern above uses UniApp's standard navigation APIs (`uni.navigateTo`, `uni.getStorageSync`) rather than a framework-level interceptor. For more complex per-route guard logic, consult the `@skiyee/oiyo` release notes for any dedicated guard API introduced in newer versions.
+</Warning>
+
+<Tip>
+  Combine navigation guards with `defineRootContext` to share auth state across guards and pages without prop drilling. Declare the token ref once in `App.vue` and read it from any page using `defineRootContext`.
+</Tip>

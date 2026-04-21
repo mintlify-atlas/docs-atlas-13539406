@@ -1,0 +1,120 @@
+---
+title: "CLI reference: oiyo dev, oiyo build, oiyo prepare"
+description: "Oiyo provides three CLI commands — dev, build, and prepare — to run the development server, compile for target platforms, and initialize project setup."
+---
+
+The `@skiyee/oiyo` package includes a CLI with three commands that replace the standard UniApp build workflow. All commands are invoked as `oiyo <command>` and are wired into `package.json` scripts so you can run them through your package manager.
+
+## Commands
+
+<CodeGroup>
+
+```bash oiyo dev
+oiyo dev
+```
+
+```bash oiyo build
+oiyo build
+```
+
+```bash oiyo prepare
+oiyo prepare
+```
+
+</CodeGroup>
+
+### oiyo dev
+
+Starts the development server with hot module replacement enabled. The watcher tracks `src/pages/` for new or removed files and updates routing automatically — you do not need to manually edit `pages.json` when adding a page during development.
+
+Equivalent to the `dev` script in `package.json`:
+
+```json
+"dev": "oiyo dev"
+```
+
+### oiyo build
+
+Compiles the app for the target platform. The output format is determined by the platform flag or environment configuration in effect at build time (for example, targeting WeChat Mini Program vs. H5).
+
+Equivalent to the `build` script in `package.json`:
+
+```json
+"build": "oiyo build"
+```
+
+### oiyo prepare
+
+Runs project initialization: generates TypeScript types, updates `pages.json`, and sets up any auto-generated files required by Oiyo plugins. This command runs automatically via the `postinstall` hook, so it executes whenever you run `pnpm install`.
+
+Re-run it manually after adding new Oiyo plugins or upgrading `@skiyee/oiyo`:
+
+```bash
+oiyo prepare
+```
+
+Equivalent to the `postinstall` script in `package.json`:
+
+```json
+"postinstall": "oiyo prepare"
+```
+
+## All scripts
+
+The full `scripts` block from `package.json`:
+
+```json package.json
+{
+  "scripts": {
+    "dev": "oiyo dev",
+    "build": "oiyo build",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "oiyo prepare"
+  }
+}
+```
+
+The `typecheck` script (`tsc --noEmit`) is a standard TypeScript type check, not an Oiyo command. It validates your project's types without emitting compiled output.
+
+## First-time project setup
+
+<Steps>
+  <Step title="Install dependencies">
+    Run your package manager's install command. The `postinstall` hook will trigger `oiyo prepare` automatically.
+
+    ```bash
+    pnpm install
+    ```
+  </Step>
+  <Step title="Verify prepare ran correctly">
+    Check that `pages.json` and any generated type files were created or updated. If `postinstall` did not run (for example, in a CI environment with `--ignore-scripts`), run prepare manually.
+
+    ```bash
+    oiyo prepare
+    ```
+  </Step>
+  <Step title="Start the development server">
+    Launch the dev server. Oiyo watches your pages directory and updates routing as you add files.
+
+    ```bash
+    pnpm dev
+    ```
+  </Step>
+</Steps>
+
+## Common issues
+
+<AccordionGroup>
+  <Accordion title="pages.json is out of sync after adding a new page">
+    If you add a page file while the dev server is not running, `pages.json` may not reflect the new route. Run `oiyo prepare` manually to regenerate it, then restart the dev server.
+  </Accordion>
+  <Accordion title="oiyo prepare did not run after install">
+    Some CI pipelines or package manager configurations skip lifecycle scripts. Run `oiyo prepare` explicitly as a separate step in your pipeline after `install` completes.
+  </Accordion>
+  <Accordion title="Type errors after upgrading @skiyee/oiyo">
+    Generated type files from a previous version may conflict with the new release. Run `oiyo prepare` after upgrading to regenerate them, then run `pnpm typecheck` to confirm the types are clean.
+  </Accordion>
+  <Accordion title="Build output targets the wrong platform">
+    `oiyo build` reads your platform configuration from the environment. Make sure the correct platform environment variables or configuration flags are set before running the build command.
+  </Accordion>
+</AccordionGroup>

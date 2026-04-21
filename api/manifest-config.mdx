@@ -1,0 +1,137 @@
+---
+title: "manifest.json: configuring the UniApp app manifest"
+description: "manifest.json configures app identity, version, platform-specific settings, and mini-program app IDs for WeChat, Alipay, Baidu, and ByteDance targets."
+---
+
+`manifest.json` is the standard UniApp application manifest that configures your app's identity, version number, and platform-specific settings. Oiyo projects use the same `manifest.json` as any UniApp project—Oiyo does not modify this file. You maintain it by hand when you need to change app metadata or publish to a new platform.
+
+---
+
+## Core fields
+
+<ResponseField name="name" type="string" required>
+  The app's display name. In the Oiyo starter this is `"@skiyee/oiyo"`. Change it to your own app name before publishing.
+</ResponseField>
+
+<ResponseField name="appid" type="string">
+  UniApp cloud app ID. Leave empty (`""`) for local development. Assign a value if you use UniApp's cloud build service or push notifications.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Short description of the app. Shown in some platform stores and the UniApp developer console.
+</ResponseField>
+
+<ResponseField name="versionName" type="string" required>
+  Human-readable version string, e.g. `"1.0.0"`. Displayed to users in app stores.
+</ResponseField>
+
+<ResponseField name="versionCode" type="string" required>
+  Numeric version code as a string, e.g. `"100"`. Used by platforms to determine whether an update is available. Increment this with every release.
+</ResponseField>
+
+<ResponseField name="transformPx" type="boolean" default="false">
+  When `false`, UniApp does not auto-transform `px` values—your CSS units are passed through as-is. Set to `true` only if you want UniApp to scale `px` to device pixels. Oiyo projects default to `false` because styles use `rpx` directly.
+</ResponseField>
+
+<ResponseField name="vueVersion" type="string" required>
+  Must be `"3"` for all Oiyo projects. Oiyo requires Vue 3 and is not compatible with the legacy Vue 2 UniApp compiler.
+</ResponseField>
+
+---
+
+## Platform sections
+
+### mp-weixin — WeChat mini-program
+
+<ResponseField name="mp-weixin.appid" type="string">
+  Your WeChat mini-program App ID. Leave empty during development. You must set this to your real App ID before submitting to the WeChat developer platform.
+</ResponseField>
+
+<ResponseField name="mp-weixin.setting.urlCheck" type="boolean" default="false">
+  When `false`, WeChat's domain whitelist check is disabled. Set to `true` in production if you want WeChat to enforce that all network requests use whitelisted domains.
+</ResponseField>
+
+<ResponseField name="mp-weixin.usingComponents" type="boolean" default="true">
+  Enables the WeChat custom component model. Must remain `true` for Vue 3 / Oiyo projects.
+</ResponseField>
+
+<Warning>
+  Set `mp-weixin.appid` to your actual WeChat mini-program App ID before publishing. Submitting with an empty `appid` will be rejected by the WeChat review process.
+</Warning>
+
+### mp-alipay — Alipay mini-program
+
+<ResponseField name="mp-alipay.usingComponents" type="boolean" default="true">
+  Enables the Alipay custom component model. Must remain `true`.
+</ResponseField>
+
+### mp-baidu — Baidu smart mini-program
+
+<ResponseField name="mp-baidu.usingComponents" type="boolean" default="true">
+  Enables the Baidu custom component model. Must remain `true`.
+</ResponseField>
+
+### mp-toutiao — ByteDance / Douyin mini-program
+
+<ResponseField name="mp-toutiao.usingComponents" type="boolean" default="true">
+  Enables the ByteDance custom component model. Must remain `true`.
+</ResponseField>
+
+---
+
+## Full manifest structure
+
+The following is the `manifest.json` from the Oiyo starter project, with the verbose Android permissions array omitted for brevity:
+
+```json src/manifest.json
+{
+  "name": "@skiyee/oiyo",
+  "appid": "",
+  "description": "以降本增效、降低开发心智为目的 UniApp 增强型框架",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {},
+    "distribute": {
+      "android": { "permissions": ["..."] },
+      "ios": {},
+      "sdkConfigs": {}
+    }
+  },
+  "quickapp": {},
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  },
+  "mp-alipay": {
+    "usingComponents": true
+  },
+  "mp-baidu": {
+    "usingComponents": true
+  },
+  "mp-toutiao": {
+    "usingComponents": true
+  },
+  "uniStatistics": {
+    "enable": false
+  },
+  "vueVersion": "3"
+}
+```
+
+<Note>
+  The `app-plus` section configures the native App (iOS/Android) target. If you are only targeting mini-programs, you can leave this section at its defaults.
+</Note>

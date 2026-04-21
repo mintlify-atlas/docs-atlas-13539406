@@ -1,0 +1,122 @@
+---
+title: "TypeScript setup and typed APIs in Oiyo projects"
+description: "Oiyo is built with TypeScript. Learn how to type your pages, use typed root context, and configure tsconfig.json for UniApp and Oiyo compatibility."
+---
+
+Oiyo is written in TypeScript and provides full type support for its runtime API, including typed `defineRootContext`, typed lifecycle hooks, and Vue 3 SFC support. Because Oiyo re-exports Vue primitives through its own runtime package, you get Oiyo-aware types alongside standard Vue types — without any manual augmentation.
+
+<Note>
+  Oiyo requires Node `>=18 <22` and TypeScript `>=5.x`. Make sure both constraints are satisfied before setting up a project.
+</Note>
+
+## tsconfig.json
+
+The Oiyo source project ships with the following compiler options. Key settings are `"moduleResolution": "Bundler"` (required for Vite), `strict: true`, and the `@skiyee/oiyo/types` entry in `types` to load Oiyo's global type declarations.
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "lib": ["ESNext"],
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "types": [
+      "node",
+      "vite/client",
+      "@skiyee/oiyo/types"
+    ],
+    "strict": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "**/dist/**",
+    "**/node_modules/**"
+  ]
+}
+```
+
+Adding `"@skiyee/oiyo/types"` to the `types` array makes `defineRootContext`, `definePageMeta`, and other Oiyo globals available without an explicit import in every file.
+
+## Typed defineRootContext
+
+The factory function passed to `defineRootContext` is fully inferred — TypeScript resolves the return type from whatever the factory returns. No manual generic parameters are needed.
+
+```typescript App.vue
+// App.vue
+import { ref } from '@skiyee/oiyo/runtime'
+
+const { title, count, increment } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')  // Ref<string>
+  const count = ref(2)              // Ref<number>
+
+  function increment(): void {
+    count.value += 3
+  }
+
+  return { title, count, increment }
+})
+// title: Ref<string>, count: Ref<number>, increment: () => void
+```
+
+TypeScript infers the destructured types directly from the factory's return statement, so callers get precise types with no casting.
+
+## Typed page components with definePageMeta
+
+`definePageMeta` is a compiler macro typed by `@skiyee/oiyo/types`. No explicit typing is needed on the call site — TypeScript validates the shape at compile time.
+
+```typescript pages/home/index.vue
+// Pages are typed — no explicit typing needed for definePageMeta
+definePageMeta({
+  layout: 'tabbar', // string
+  style: {
+    navigationBarTitleText: 'Home', // string
+  },
+})
+```
+
+## Import from @skiyee/oiyo/runtime
+
+Always import Vue primitives and lifecycle hooks from `@skiyee/oiyo/runtime` rather than directly from `vue`. The runtime re-export ensures you get Oiyo's type augmentations alongside the standard Vue types.
+
+<Tabs>
+  <Tab title="Typed (recommended)">
+    ```typescript
+    import { onLaunch, onLoad, ref } from '@skiyee/oiyo/runtime'
+
+    // Lifecycle hooks are typed to the Oiyo context
+    onLaunch(() => {
+      // LaunchOptions typed correctly
+    })
+
+    onLoad(() => {
+      // Page load options typed correctly
+    })
+
+    const count = ref(0) // Ref<number>
+    ```
+  </Tab>
+  <Tab title="Untyped (avoid)">
+    ```typescript
+    // Importing directly from 'vue' bypasses Oiyo type augmentations
+    import { ref } from 'vue'
+
+    // Lifecycle hooks from '@dcloudio/uni-app' lack Oiyo context types
+    import { onLaunch } from '@dcloudio/uni-app'
+    ```
+  </Tab>
+</Tabs>
+
+## Running a type check
+
+The `typecheck` script in `package.json` runs `tsc --noEmit` against the project without emitting output files. It is a standard TypeScript check, not an Oiyo-specific command.
+
+```bash
+pnpm typecheck
+```
+
+Use this in CI to catch type errors before building.

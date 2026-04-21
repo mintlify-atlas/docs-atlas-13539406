@@ -1,0 +1,100 @@
+{
+  "projectType": "framework",
+  "projectName": "Oiyo",
+  "projectDescription": "An enhanced UniApp engineering framework that integrates AI collaboration, improves developer experience, and reduces cognitive overhead through conventions and opinionated project structure.",
+  "theme": "palm",
+  "primaryColor": "#040404",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "project-structure"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/layout-system",
+              "concepts/root-context",
+              "concepts/auto-routing",
+              "concepts/page-meta"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/navigation-guards",
+              "guides/unocss",
+              "guides/typescript",
+              "guides/cli-commands"
+            ]
+          },
+          {
+            "group": "Framework",
+            "pages": [
+              "framework/philosophy",
+              "framework/dependencies",
+              "framework/ai-collaboration",
+              "framework/migration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Runtime API",
+            "pages": [
+              "api/runtime",
+              "api/composables",
+              "api/lifecycle"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "api/vite-plugin",
+              "api/pages-config",
+              "api/manifest-config"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Root context (defineRootContext) for app-level state shared across pages",
+    "Layout system with named layouts (default, tabbar, custom)",
+    "Auto routing from file-system convention (src/pages/)",
+    "Page meta declaration via definePageMeta() in SFCs",
+    "Navigation guards for route protection",
+    "Opinionated project structure reducing repetitive setup",
+    "Stable dependency version management",
+    "AI collaboration integration for enhanced developer productivity",
+    "CLI commands: oiyo dev, oiyo build, oiyo prepare",
+    "Vite plugin for seamless UniApp integration"
+  ],
+  "publicApiSurface": [
+    "createSSRApp() — from @skiyee/oiyo/runtime",
+    "defineRootContext() — app-level reactive state shared across all pages",
+    "definePageMeta() — declare layout and page style per SFC",
+    "onLaunch() — app lifecycle hook",
+    "onLoad() — page lifecycle hook",
+    "ref() — reactive reference (re-exported from Vue)",
+    "OiyoPlugin() — from @skiyee/oiyo/plugin, used in vite.config.ts",
+    "<OiyoLayout> — component wrapping named layouts in App.vue",
+    "<OiyoPage> — component rendering the active page inside a layout",
+    "oiyo dev — CLI command to start dev server",
+    "oiyo build — CLI command to build for target platform",
+    "oiyo prepare — CLI command run on postinstall setup"
+  ]
+}

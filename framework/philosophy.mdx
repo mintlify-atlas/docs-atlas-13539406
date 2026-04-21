@@ -1,0 +1,56 @@
+---
+title: "Design philosophy: why Oiyo makes the choices it does"
+description: "Oiyo is built on three principles: AI collaboration, improved developer experience, and reduced cognitive overhead—applied to UniApp engineering."
+---
+
+Oiyo was designed around three core ideas: integrating AI collaboration into the workflow, improving the day-to-day developer experience, and reducing the mental overhead of UniApp project setup. Rather than leaving teams to assemble their own tooling conventions, Oiyo encodes those decisions into the framework itself—so every project starts from a consistent, well-reasoned foundation.
+
+## AI collaboration
+
+UniApp projects are often opaque to AI coding tools. Non-standard file layouts, manually maintained `pages.json`, and ad-hoc app initialization patterns mean tools like Cursor or GitHub Copilot frequently produce incorrect suggestions. Oiyo addresses this by making the codebase predictable: auto-routing follows a clear file-system convention, `definePageMeta` has a typed signature, and `defineRootContext` lives in a known location (`App.vue`). The result is that AI tools can reason about an Oiyo project with the same confidence they bring to a Next.js or Nuxt project.
+
+## Developer experience
+
+Repetitive setup tasks—wiring pages into `pages.json`, building layout hierarchies, writing navigation guards from scratch—consume time without delivering business value. Oiyo automates these with its layout system, auto-routing, and jump guard features. Developers work at the level of components and business logic, not configuration plumbing.
+
+<Info>
+  Oiyo's CLI commands (`oiyo dev`, `oiyo build`, `oiyo prepare`) replace the raw Vite commands you would otherwise configure manually.
+</Info>
+
+## Reduced cognitive overhead
+
+Every decision a developer must make before writing their first line of product code is a source of cognitive load. Oiyo eliminates whole categories of these decisions by adopting a single, opinionated project structure. You don't choose where layouts go, how pages are registered, or how the app root is initialized—Oiyo defines these conventions, and your team follows them.
+
+## Conventions over configuration
+
+Oiyo takes the same approach that Nuxt takes for Vue and Next.js takes for React: provide strong conventions so that configuration becomes the exception, not the rule. A page at `src/pages/profile/index.vue` is automatically registered with the correct route. A file at `src/layouts/default.vue` is automatically applied as the default layout. These are not options you configure—they are the way Oiyo works. Teams onboard faster because the structure is already decided.
+
+<Note>
+  This doesn't mean Oiyo is inflexible. `definePageMeta` lets you override layout, guard behavior, and route metadata on a per-page basis when you need to diverge from the convention.
+</Note>
+
+## The eight features
+
+The three principles above are realized through eight concrete features:
+
+1. **Root context** — centralized app-level state and lifecycle via `defineRootContext` in `App.vue`
+2. **Layout system** — file-based layouts (`src/layouts/`) automatically applied to pages
+3. **Auto-routing** — `pages.json` generated from the file system; no manual registration
+4. **Page meta declarations** — per-page metadata via the typed `definePageMeta` macro
+5. **Jump guards** — navigation middleware with typed route context
+6. **Opinionated project structure** — a consistent directory layout enforced by convention
+7. **Stable dependency versions** — pinned UniApp and Vite versions tested to work together
+8. **All-in-one team service** — commercial support options for migration, customization, and debugging
+
+Together these features mean a new team member can read one page of docs and immediately understand the structure of any Oiyo project.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create your first Oiyo project in under five minutes.
+  </Card>
+  <Card title="Auto-routing" icon="route" href="/concepts/auto-routing">
+    Learn how Oiyo generates your page routes from the file system.
+  </Card>
+</CardGroup>

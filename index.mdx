@@ -1,97 +1,101 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Oiyo: Enhanced UniApp Framework for Mini-App Development"
+description: "Oiyo supercharges UniApp development with auto-routing, layout system, root context, and AI collaboration—so you focus on features, not boilerplate."
 ---
 
-## Setting up
+Oiyo is an enhanced engineering framework built on top of UniApp that replaces repetitive project setup with conventions. It ships with a file-system-based auto-router, a named layout system, app-level shared state via `defineRootContext`, page meta declarations, and navigation guards—all wired together through a single Vite plugin. Whether you're building WeChat mini-programs, Alipay mini-programs, H5, or native apps, Oiyo gives you a consistent, opinionated structure that scales.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create your first Oiyo project and run it in under five minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Project Structure" icon="folder-tree" href="/project-structure">
+    Understand the opinionated directory layout that powers Oiyo's conventions.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Core Concepts" icon="book-open" href="/concepts/layout-system">
+    Learn the layout system, root context, auto-routing, and page meta.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API Reference" icon="code" href="/api/runtime">
+    Explore every function, component, and configuration option in detail.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Why Oiyo?
 
-Everything you need to create world-class documentation.
+Building UniApp projects traditionally means writing the same scaffolding over and over—manually registering pages, duplicating layout wrappers, passing state through props or Pinia, and repeating navigation logic across dozens of files. Oiyo eliminates this noise.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Auto Routing" icon="route" href="/concepts/auto-routing">
+    Pages in `src/pages/` are automatically registered—no manual `pages.json` editing required.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Layout System" icon="layout" href="/concepts/layout-system">
+    Declare a layout per page with `definePageMeta`. Layouts wrap pages, pages wrap content.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Root Context" icon="share-nodes" href="/concepts/root-context">
+    Share reactive state app-wide from `App.vue` using `defineRootContext`—no store needed.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Page Meta" icon="tag" href="/concepts/page-meta">
+    Set navigation bar titles, layouts, and page styles inline in each SFC with `definePageMeta`.
   </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Get started
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Steps>
+  <Step title="Install Oiyo">
+    Add the Oiyo package to a new or existing UniApp project.
+
+    ```bash
+    pnpm add @skiyee/oiyo
+    ```
+  </Step>
+  <Step title="Add the Vite plugin">
+    Register `OiyoPlugin` in your `vite.config.ts`.
+
+    ```typescript vite.config.ts
+    import OiyoPlugin from '@skiyee/oiyo/plugin'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [OiyoPlugin()],
+    })
+    ```
+  </Step>
+  <Step title="Initialize your app">
+    Use `createSSRApp` from `@skiyee/oiyo/runtime` in `src/main.ts`.
+
+    ```typescript src/main.ts
+    import { createSSRApp } from '@skiyee/oiyo/runtime'
+    import App from './App.vue'
+
+    export function createApp() {
+      const app = createSSRApp(App)
+      return { app }
+    }
+    ```
+  </Step>
+  <Step title="Create your first page">
+    Add `src/pages/home/index.vue` and declare its meta inline.
+
+    ```vue src/pages/home/index.vue
+    <script setup>
+    import { ref } from '@skiyee/oiyo/runtime'
+
+    definePageMeta({
+      layout: 'default',
+      style: { navigationBarTitleText: 'Home' },
+    })
+
+    const message = ref('Hello Oiyo!')
+    </script>
+
+    <template>
+      <view>{{ message }}</view>
+    </template>
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  Run `oiyo dev` to start the development server. Oiyo automatically picks up new pages in `src/pages/` without any manual registration.
+</Tip>

@@ -1,0 +1,130 @@
+---
+title: "Styling Oiyo apps with UnoCSS and uni-unocss"
+description: "Oiyo projects use uni-unocss for atomic CSS in UniApp. Configure presets, add directives, and use variant groups for maintainable mini-app styles."
+---
+
+Oiyo integrates UnoCSS through the `uni-unocss` package, which adapts UnoCSS for UniApp's `rpx` unit system and mini-app constraints. Unlike plain UnoCSS, `uni-unocss` ships a `presetUni` that converts pixel values to `rpx` automatically and handles the quirks of WeChat Mini Program and other UniApp targets.
+
+## Configuration files
+
+Both `uno.config.ts` and `vite.config.ts` need to be set up for the integration to work.
+
+### uno.config.ts
+
+```typescript uno.config.ts
+import {
+  defineConfig,
+  presetUni,
+  transformerDirectives,
+  transformerVariantGroup,
+} from 'uni-unocss'
+
+export default defineConfig({
+  presets: [
+    presetUni(),
+  ],
+  transformers: [
+    transformerDirectives(),
+    transformerVariantGroup(),
+  ],
+})
+```
+
+### vite.config.ts
+
+```typescript vite.config.ts
+import OiyoPlugin from '@skiyee/oiyo/plugin'
+import UnoPlugin from 'uni-unocss'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    UnoPlugin(),
+    OiyoPlugin(),
+  ],
+})
+```
+
+`UnoPlugin()` must be listed before `OiyoPlugin()` so that CSS is processed before Oiyo's transformations run.
+
+## Presets and transformers
+
+### presetUni
+
+`presetUni` is the core preset for UniApp projects. It provides utility classes optimized for the mini-app environment and automatically converts `px` values to `rpx`, UniApp's responsive pixel unit that scales across different screen densities.
+
+### transformerDirectives
+
+Enables the `@apply` directive inside Vue SFC `<style>` blocks. This lets you compose utility classes into named selectors without leaving your template syntax.
+
+```vue
+<style scoped>
+.my-button {
+  @apply rounded-[16rpx] bg-blue-500 text-white px-[24rpx] py-[12rpx];
+}
+</style>
+```
+
+### transformerVariantGroup
+
+Enables grouped variant syntax, so you can apply multiple utilities under a single variant prefix:
+
+```html
+<view class="hover:(bg-red-500 text-white) focus:(outline-none ring-2)">
+  Grouped variants
+</view>
+```
+
+## Real-world class names
+
+The class names below come directly from `App.vue` and `src/pages/home/index.vue` in the Oiyo source:
+
+**Layout and spacing**
+- `min-h-screen` — full viewport height
+- `box-border` — include padding and border in element dimensions
+- `p-[28rpx]` — padding using rpx units
+- `mt-[20rpx]`, `mt-[24rpx]` — top margin in rpx
+
+**Visual styling**
+- `bg-[linear-gradient(180deg,#eef4ff_0%,#f7f9fc_100%)]` — arbitrary gradient background
+- `rounded-[24rpx]`, `rounded-[18rpx]` — arbitrary border radius in rpx
+- `border-[2rpx] border-solid border-[#c8d7ff]` — explicit border width, style, and color
+- `shadow-[0_16rpx_36rpx_rgba(61,104,255,0.08)]` — arbitrary box shadow
+- `bg-[rgba(255,255,255,0.9)]` — semi-transparent background
+
+**Typography**
+- `text-[24rpx]`, `text-[30rpx]`, `text-[34rpx]` — font size in rpx
+- `text-[#3d68ff]`, `text-[#16213d]` — arbitrary text colors
+- `font-700`, `font-600` — font weight utilities
+- `tracking-[4rpx]` — letter spacing in rpx
+- `leading-[1.7]` — line height
+
+**Flex and positioning**
+- `flex items-center justify-between` — flexbox alignment
+- `gap-[20rpx]` — flex/grid gap in rpx
+- `overflow-hidden` — hide overflow
+
+## Using @apply in style blocks
+
+<Tip>
+  Use `rpx` units (e.g., `p-[28rpx]`) for all sizing in UniApp. The `rpx` unit scales with screen width — 750rpx always equals the full viewport width regardless of device.
+</Tip>
+
+```vue
+<style scoped>
+.my-button {
+  @apply rounded-[16rpx] bg-blue-500 text-white px-[24rpx] py-[12rpx];
+}
+
+.card {
+  @apply rounded-[24rpx] border-[2rpx] border-solid border-[#c8d7ff]
+         bg-[rgba(255,255,255,0.9)] shadow-[0_16rpx_36rpx_rgba(61,104,255,0.08)];
+}
+</style>
+```
+
+## FAQ
+
+<Accordion title="Why uni-unocss instead of plain UnoCSS?">
+  Plain UnoCSS does not understand UniApp's `rpx` unit system or the CSS restrictions imposed by WeChat Mini Program and other targets. `uni-unocss` ships `presetUni` which maps utility classes to `rpx`-based values and strips out CSS features that mini-app runtimes do not support (such as CSS variables in certain contexts). Using `uni-unocss` ensures the generated styles work correctly across all UniApp compile targets — H5, WeChat Mini Program, Alipay Mini Program, and others.
+</Accordion>

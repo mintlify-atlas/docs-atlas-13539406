@@ -1,0 +1,130 @@
+---
+title: "Migrate an existing UniApp project to Oiyo"
+description: "Move a plain UniApp project to Oiyo by installing the package, registering the plugin, adopting file-system routing, and converting page registrations."
+---
+
+If you have an existing UniApp project, you can adopt Oiyo incrementally. The main steps are installing `@skiyee/oiyo`, registering `OiyoPlugin` in `vite.config.ts`, updating `main.ts` to use `createSSRApp` from Oiyo's runtime, and migrating your pages to use `definePageMeta`. You don't have to migrate everything at once—Oiyo can coexist with manually registered pages during the transition.
+
+<Warning>
+  Back up your `pages.json` before running `oiyo prepare`. The command regenerates the file from your file system and `definePageMeta` declarations, and it will overwrite any manual entries that are not covered by a matching page file.
+</Warning>
+
+<Steps>
+  <Step title="Install @skiyee/oiyo">
+    Add Oiyo as a dependency using pnpm:
+
+    ```bash
+    pnpm add @skiyee/oiyo
+    ```
+
+    Also verify that your `package.json` `engines` field matches Oiyo's requirements (Node 18–21, pnpm ≥8) and that you have `vite` pinned to `5.2.8` in `devDependencies`:
+
+    ```json package.json
+    {
+      "engines": {
+        "node": ">=18.0.0<22",
+        "pnpm": ">=8"
+      },
+      "devDependencies": {
+        "vite": "5.2.8"
+      }
+    }
+    ```
+  </Step>
+  <Step title="Register OiyoPlugin in vite.config.ts">
+    Import and add `OiyoPlugin` to your Vite configuration. If you have an existing `uni()` plugin call, `OiyoPlugin` wraps and replaces it:
+
+    ```typescript vite.config.ts
+    import OiyoPlugin from '@skiyee/oiyo/plugin'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [
+        OiyoPlugin(),
+      ],
+    })
+    ```
+  </Step>
+  <Step title="Update main.ts to use createSSRApp from Oiyo">
+    Replace the standard UniApp `createSSRApp` import with the one from `@skiyee/oiyo/runtime`. Oiyo's version augments the app instance with the layout system, jump guards, and auto-routing integration:
+
+    ```typescript main.ts
+    import { createSSRApp } from '@skiyee/oiyo/runtime'
+    import App from './App.vue'
+
+    export function createApp() {
+      const app = createSSRApp(App)
+      return { app }
+    }
+    ```
+  </Step>
+  <Step title="Add defineRootContext to App.vue">
+    Replace any ad-hoc app-level setup in `App.vue` with `defineRootContext`. Pass a factory function that returns the reactive state and functions you want to share app-wide:
+
+    ```vue App.vue
+    <script setup lang="ts">
+    import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+    const { isReady } = defineRootContext(() => {
+      const isReady = ref(false)
+      return { isReady }
+    })
+
+    onLaunch(() => {
+      isReady.value = true
+    })
+    </script>
+    ```
+  </Step>
+  <Step title="Migrate page registrations to definePageMeta">
+    For each page you want to move to file-system routing, remove its entry from `pages.json` and add a `definePageMeta` call in the page's `<script setup>`:
+
+    ```vue src/pages/home/index.vue
+    <script setup>
+    definePageMeta({
+      layout: 'default',
+      style: {
+        navigationBarTitleText: 'Home',
+      },
+    })
+    </script>
+    ```
+
+    <Tip>
+      You can migrate pages one at a time. Oiyo reads both manual `pages.json` entries and `definePageMeta` declarations during the transition, so partially-migrated projects continue to build correctly.
+    </Tip>
+  </Step>
+  <Step title="Create src/layouts/default.vue if it doesn't exist">
+    Oiyo's layout system expects at least a `default.vue` in `src/layouts/`. If your project uses a shared wrapper component, move that logic here:
+
+    ```html src/layouts/default.vue
+    <template>
+      <slot />
+    </template>
+    ```
+
+    Pages that don't specify a `layout` in `definePageMeta` will automatically use this file.
+  </Step>
+  <Step title="Run oiyo prepare to regenerate pages.json">
+    Once your pages have `definePageMeta` declarations and your layout file is in place, regenerate `pages.json` from the file system:
+
+    ```bash
+    oiyo prepare
+    ```
+
+    Review the output `pages.json` to confirm all expected routes are present before proceeding.
+  </Step>
+  <Step title="Run oiyo dev to verify">
+    Start the development server and confirm the app renders correctly:
+
+    ```bash
+    oiyo dev
+    ```
+
+    Check the console for any missing route warnings or layout resolution errors. If a page is missing, verify its file path matches the expected `src/pages/` convention and that `definePageMeta` is called inside `<script setup>`.
+  </Step>
+</Steps>
+
+<Note>
+  If you are starting a new project rather than migrating an existing one, the quickstart guide walks through the recommended fresh-start setup with all conventions applied from the beginning. See [Quickstart](/quickstart).
+</Note>

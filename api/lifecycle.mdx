@@ -1,0 +1,159 @@
+---
+title: "Lifecycle hooks: UniApp app and page events in Oiyo"
+description: "Oiyo exposes UniApp's app and page lifecycle hooks via @skiyee/oiyo/runtime. Use onLaunch for app startup and onLoad, onShow, onHide for page events."
+---
+
+Oiyo wraps UniApp's lifecycle hooks and exports them from `@skiyee/oiyo/runtime`. App-level hooks (`onLaunch`, `onShow`, `onHide`) are used in `App.vue`; page-level hooks (`onLoad`, `onShow`, `onReady`, `onHide`, `onUnload`) are used in page SFCs. All hooks follow Vue 3's composition API pattern—call them at the top level of `setup()`.
+
+```typescript
+import { onLaunch, onLoad } from '@skiyee/oiyo/runtime'
+```
+
+<Warning>
+  These are composition API hooks—they must be called at the top level of `setup()`, never inside conditionals, loops, or nested functions. Calling them conditionally breaks hook registration.
+</Warning>
+
+---
+
+## App lifecycle hooks
+
+Use these in `App.vue`. They fire for the application as a whole, not for individual pages.
+
+### onLaunch
+
+Fires once when the application first launches. Use it to initialize global state, configure analytics, or run startup checks.
+
+```vue App.vue
+<script setup lang="ts">
+import { onLaunch, ref } from '@skiyee/oiyo/runtime'
+
+const { title } = defineRootContext(() => {
+  const title = ref('Hello Oiyo')
+  return { title }
+})
+
+onLaunch(() => {
+  console.log('App Launch, title:', title.value)
+})
+</script>
+```
+
+### onShow
+
+Fires each time the app comes to the foreground—on launch and when the user returns from the background or another mini-program.
+
+```typescript
+import { onShow } from '@skiyee/oiyo/runtime'
+
+onShow(() => {
+  console.log('App is visible')
+})
+```
+
+### onHide
+
+Fires when the app moves to the background (e.g. the user navigates away on WeChat or presses the home button).
+
+```typescript
+import { onHide } from '@skiyee/oiyo/runtime'
+
+onHide(() => {
+  console.log('App moved to background')
+})
+```
+
+---
+
+## Page lifecycle hooks
+
+Use these inside page SFCs (`src/pages/**/*.vue`). Each hook fires for the specific page that declares it.
+
+### onLoad
+
+Fires when the page is loaded and receives its query parameters. This is the earliest point at which you can access page params.
+
+```vue pages/home/index.vue
+<script setup>
+import { onLoad, ref } from '@skiyee/oiyo/runtime'
+
+definePageMeta({
+  layout: 'tabbar',
+  style: {
+    navigationBarTitleText: '首页 - Oiyo',
+  },
+})
+
+onLoad(() => {
+  console.log('Page Load')
+})
+
+const title = ref('Hello')
+</script>
+```
+
+### onShow
+
+Fires each time the page is shown—after `onLoad` on first visit, and again whenever the user navigates back to the page.
+
+```typescript
+import { onShow } from '@skiyee/oiyo/runtime'
+
+onShow(() => {
+  console.log('Page shown — refresh data if needed')
+})
+```
+
+### onReady
+
+Fires when the page's initial render is complete and the DOM is ready. Use it for operations that require a rendered layout, such as querying node dimensions.
+
+```typescript
+import { onReady } from '@skiyee/oiyo/runtime'
+
+onReady(() => {
+  console.log('Page ready — initial render complete')
+})
+```
+
+### onHide
+
+Fires when the page is hidden—for example, when the user navigates to another page while keeping this one in the stack.
+
+```typescript
+import { onHide } from '@skiyee/oiyo/runtime'
+
+onHide(() => {
+  console.log('Page hidden')
+})
+```
+
+### onUnload
+
+Fires when the page is destroyed and removed from the navigation stack (e.g. after `uni.redirectTo` or `uni.navigateBack` past it).
+
+```typescript
+import { onUnload } from '@skiyee/oiyo/runtime'
+
+onUnload(() => {
+  console.log('Page unloaded — release resources')
+})
+```
+
+---
+
+## Hook reference table
+
+| Hook | Trigger | Context |
+|------|---------|---------|
+| `onLaunch` | App first launch | App (`App.vue`) |
+| `onShow` | App enters foreground | App (`App.vue`) |
+| `onHide` | App enters background | App (`App.vue`) |
+| `onLoad` | Page loaded, params available | Page SFC |
+| `onShow` | Page becomes visible | Page SFC |
+| `onReady` | Page initial render complete | Page SFC |
+| `onHide` | Page hidden (still in stack) | Page SFC |
+| `onUnload` | Page destroyed | Page SFC |
+
+<Note>
+  `onShow` and `onHide` exist for both App and Page contexts. The same import works in both—Oiyo routes the hook to the correct UniApp scope based on where it is called.
+</Note>

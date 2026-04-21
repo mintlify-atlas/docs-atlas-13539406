@@ -1,80 +1,145 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quickstart: install and run your first Oiyo project"
+description: "Install Oiyo into a UniApp project, configure the Vite plugin, write your first page with definePageMeta, and run the dev server in five steps."
 ---
 
-## Get started in three steps
+Oiyo wraps a UniApp project with auto-routing, a layout system, root context, and navigation guards—all activated through a single Vite plugin. This guide walks you from an empty UniApp scaffold to a running Oiyo application. The full process takes less than five minutes on a fresh machine.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Prerequisites">
+    Before installing Oiyo, make sure your environment meets the required versions.
 
-### Step 1: Set up your local environment
+    | Requirement | Version |
+    | ----------- | ------- |
+    | Node.js | `>=18.0.0 <22` |
+    | pnpm | `>=8` |
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    Oiyo requires an existing UniApp project as its base. If you don't have one, create a scaffold using the official UniApp CLI or the HBuilderX project wizard before continuing.
 
-### Step 2: Deploy your changes
+    <Info>
+      Oiyo's `package.json` pins `node` to `>=18.0.0<22` and `pnpm` to `>=8`. Using a version outside these ranges may produce install errors or unexpected runtime behavior.
+    </Info>
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+  <Step title="Install the package">
+    Add `@skiyee/oiyo` as a dependency in your project root.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    <CodeGroup>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash pnpm
+    pnpm add @skiyee/oiyo
+    ```
 
-### Step 3: Go live
+    ```bash npm
+    npm install @skiyee/oiyo
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    ```bash yarn
+    yarn add @skiyee/oiyo
+    ```
 
-## Next steps
+    </CodeGroup>
 
-Now that you have your docs running, explore these key features:
+    After installation, the `postinstall` script runs `oiyo prepare` automatically. This generates the initial `src/pages.json` manifest from any pages already in `src/pages/`. You should see the file created or updated in your project after `pnpm add` completes.
 
-<CardGroup cols={2}>
+    <Note>
+      Do not edit `src/pages.json` manually. Oiyo owns this file. Any changes you make will be overwritten the next time `oiyo prepare` runs.
+    </Note>
+  </Step>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+  <Step title="Register the Vite plugin">
+    Open `vite.config.ts` and register `OiyoPlugin`. If you are using UnoCSS (recommended), add `UnoPlugin` before it.
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+    ```typescript vite.config.ts
+    import OiyoPlugin from '@skiyee/oiyo/plugin'
+    import UnoPlugin from 'uni-unocss'
+    import { defineConfig } from 'vite'
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+    export default defineConfig({
+      plugins: [
+        UnoPlugin(),
+        OiyoPlugin(),
+      ],
+    })
+    ```
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    Plugin order matters. `UnoPlugin` must come before `OiyoPlugin` so that UnoCSS class scanning runs before Oiyo's route and layout transforms.
 
-</CardGroup>
+    <Tip>
+      If you are not using UnoCSS, omit `UnoPlugin` and the `uni-unocss` import. Oiyo works without it—just remove the `import 'uno.css'` line from `main.ts` in the next step.
+    </Tip>
+  </Step>
+
+  <Step title="Set up the app entry point">
+    Replace the contents of `src/main.ts` with the Oiyo-compatible entry. It uses `createSSRApp` from `@skiyee/oiyo/runtime` instead of the standard Vue import.
+
+    ```typescript src/main.ts
+    import { createSSRApp } from '@skiyee/oiyo/runtime'
+    import App from './App.vue'
+    import 'uno.css'
+
+    export function createApp() {
+      const app = createSSRApp(App)
+      return {
+        app,
+      }
+    }
+    ```
+
+    `createSSRApp` is Oiyo's re-export of Vue's SSR-compatible app factory. UniApp requires SSR mode for all platforms, including H5 and mini-programs—do not switch this to `createApp`.
+  </Step>
+
+  <Step title="Create your first page">
+    Add a page file at `src/pages/home/index.vue`. Use `definePageMeta` to declare the layout and navigation bar title. Import reactive utilities from `@skiyee/oiyo/runtime`.
+
+    ```vue src/pages/home/index.vue
+    <script setup>
+    import { onLoad, ref } from '@skiyee/oiyo/runtime'
+
+    definePageMeta({
+      layout: 'tabbar',
+      style: {
+        navigationBarTitleText: '首页 - Oiyo',
+      },
+    })
+
+    onLoad(() => {
+      console.log('Page Load')
+    })
+
+    const title = ref('Hello')
+
+    function jump() {
+      uni.navigateTo({ url: '/pages/my/index' })
+    }
+    </script>
+
+    <template>
+      <view>
+        <text>{{ title }} Home Page</text>
+        <button type="primary" @click="jump">Go to My Page</button>
+      </view>
+    </template>
+    ```
+
+    The `layout: 'tabbar'` value tells Oiyo to wrap this page inside `src/layouts/tabbar.vue` at render time. Pages that omit `layout` fall back to `src/layouts/default.vue`. `definePageMeta` is a compiler macro—it has no runtime cost and is erased during the build.
+
+    <Warning>
+      The page file path determines the route path. `src/pages/home/index.vue` becomes the route `/pages/home/index`. Keep the directory structure intentional—renaming a page file changes its URL.
+    </Warning>
+  </Step>
+
+  <Step title="Run the development server">
+    Start the Oiyo development server with the `oiyo dev` command.
+
+    ```bash
+    oiyo dev
+    ```
+
+    Oiyo watches `src/pages/` for new or removed files and updates `pages.json` automatically during development. You do not need to restart the server when adding pages.
+  </Step>
+</Steps>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Before exploring further, read the [project structure](/project-structure) page to understand the full directory layout Oiyo expects—including where layouts live, how `App.vue` acts as the layout host, and why `pages.json` is generated rather than authored.
 </Note>

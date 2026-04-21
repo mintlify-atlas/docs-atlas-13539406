@@ -1,0 +1,111 @@
+---
+title: "Oiyo: UniApp Framework for Scalable Mini-App Development"
+description: "Oiyo is an enhanced UniApp framework with auto-routing, a layout system, root context, and navigation guards for cross-platform mini-app projects."
+---
+
+Oiyo is an enhanced engineering framework built on top of UniApp, designed around three core principles: AI collaboration, improved developer experience, and reduced mental overhead. Instead of repeatedly writing the same scaffolding—manually registering pages, threading state through props, duplicating layout wrappers—Oiyo replaces that work with conventions and a single Vite plugin. You declare intent once, in the right place, and Oiyo handles the wiring. The result is a codebase that stays coherent as it grows, whether you're shipping to a WeChat mini-program, Alipay mini-program, Baidu mini-program, ByteDance mini-program, H5, or native Android/iOS apps.
+
+<CardGroup cols={2}>
+  <Card title="Layout system" icon="layout" href="/concepts/layout-system">
+    Wrap pages in named layout components. Declare which layout to use directly in each page's `definePageMeta` call—no routing config required.
+  </Card>
+  <Card title="Root context" icon="share-nodes" href="/concepts/root-context">
+    Expose reactive state from `App.vue` to every page and layout with `defineRootContext`, without a separate store.
+  </Card>
+  <Card title="Auto routing" icon="route" href="/concepts/auto-routing">
+    Every file under `src/pages/` becomes a route automatically. Oiyo generates and maintains `pages.json` so you never touch it by hand.
+  </Card>
+  <Card title="Page meta declaration" icon="tag" href="/concepts/page-meta">
+    Set navigation bar titles, layouts, and platform-specific page styles inline in each `.vue` file using the `definePageMeta` compiler macro.
+  </Card>
+  <Card title="Navigation guards" icon="shield" href="/guides/navigation-guards">
+    Intercept and control page transitions at the framework level—handle authentication, permissions, and redirects in one place.
+  </Card>
+  <Card title="CLI commands" icon="rectangle-terminal" href="/guides/cli-commands">
+    `oiyo dev`, `oiyo build`, and `oiyo prepare` give you a consistent development workflow across all target platforms.
+  </Card>
+</CardGroup>
+
+## The problem Oiyo solves
+
+A standard UniApp project requires you to manually maintain `pages.json` every time you add a route, copy layout wrapper logic into every page that needs a shared chrome, pass application-level state down through props or configure a separate Pinia store, and repeat navigation guard logic across multiple files. This is not difficult work, but it is relentless—and it consumes attention that would be better spent on product logic.
+
+Oiyo addresses this by making structure the default instead of a task. A file placed at `src/pages/home/index.vue` is automatically a registered route. A `definePageMeta({ layout: 'tabbar' })` call at the top of that file attaches the correct layout at render time. A `defineRootContext` call in `App.vue` makes shared state available everywhere without a store. The framework encodes the decisions that every team makes anyway, so you don't have to make them repeatedly.
+
+## Core philosophy
+
+Oiyo is built around three ideas:
+
+**AI collaboration.** The opinionated structure and explicit meta declarations are designed to be predictable for both humans and language models. When a codebase follows strict conventions, AI-assisted development works reliably—you can describe a change in natural language and the model knows where the relevant files are.
+
+**Improved developer experience.** Auto-routing, the layout system, and the CLI reduce the number of files you need to open for common tasks. You add a page by creating a file. You change a layout by editing one line of `definePageMeta`. You run the app with `oiyo dev`.
+
+**Reduced mental overhead.** Stable, pinned dependencies mean upgrades are tested and safe. An opinionated project structure means new contributors orient quickly. One-stop team services mean commercial support is available when the project outgrows the free tier.
+
+## The 8 key features
+
+### 根上下文 (Root context)
+
+`defineRootContext` in `App.vue` creates a typed, reactive context that every page and layout can inject. It replaces the common pattern of a global Pinia store for app-level state like the authenticated user, theme, or configuration flags.
+
+### 布局系统 (Layout system)
+
+Named layout components live in `src/layouts/`. A page opts into a layout by calling `definePageMeta({ layout: 'tabbar' })`. Oiyo resolves the layout at render time and wraps the page content inside it. Pages without an explicit layout fall back to `default.vue` automatically.
+
+### 自动路由 (Auto routing)
+
+Every `.vue` file inside `src/pages/` is scanned and registered as a route. Oiyo writes the `pages.json` manifest on your behalf via `oiyo prepare`, which runs automatically on `postinstall`. You never edit `pages.json` directly.
+
+### 页面元信息声明 (Page meta declaration)
+
+`definePageMeta` is a compile-time macro available in every page SFC. It accepts a layout name, UniApp page styles (`navigationBarTitleText`, `enablePullDownRefresh`, etc.), and any custom metadata your guards or layouts need to read.
+
+### 跳转守卫 (Navigation guards)
+
+Guards intercept navigation events before the transition completes. You can inspect the destination route's meta, check session state from root context, and either allow, redirect, or cancel the navigation—all in one central location.
+
+### 主观工程结构 (Opinionated structure)
+
+Oiyo prescribes where every category of file lives: pages in `src/pages/`, layouts in `src/layouts/`, the app shell in `App.vue`, and the entry point in `main.ts`. This predictability is intentional—it keeps cross-team projects consistent without relying on documentation or convention enforcement in code review.
+
+### 稳定底层依赖版本 (Stable dependencies)
+
+Core dependencies are pinned and tested together. `vite` is fixed at `5.2.8`, `uni-unocss` at `^1.0.2`, and the TypeScript and ESLint configurations are managed through controlled packages. Upgrading Oiyo itself is the unit of dependency management.
+
+### 一站式团队服务 (One-stop team service)
+
+Free support covers documentation, common usage questions, and framework-level bug reports with reproductions. Commercial support covers project onboarding, legacy migration, compilation and HMR debugging, permission system integration, and custom development.
+
+## Target platforms
+
+Oiyo inherits UniApp's cross-platform compilation targets. A single codebase can be built for:
+
+- **WeChat mini-program** (`mp-weixin`)
+- **Alipay mini-program** (`mp-alipay`)
+- **Baidu mini-program** (`mp-baidu`)
+- **ByteDance mini-program** (`mp-toutiao`)
+- **H5** (browser)
+- **App** — Android and iOS via the UniApp native runtime
+
+## When to use Oiyo vs plain UniApp
+
+Use Oiyo when:
+
+- You are starting a new UniApp project and want a structured foundation from day one.
+- Your project has more than a handful of pages and the manual `pages.json` maintenance is already a friction point.
+- You want to share reactive state across pages without setting up a separate store.
+- Your team benefits from a consistent layout and routing convention that doesn't need to be documented separately.
+
+Use plain UniApp when:
+
+- You are migrating an existing large project and a full structural change is not feasible right now.
+- You have a single-page micro-app where the overhead of conventions outweighs the benefit.
+- You need a dependency version that Oiyo's stable baseline doesn't currently support.
+
+<Info>
+  Oiyo is released under a commercial software license. Free support covers documentation and general usage questions. For production project onboarding, legacy migration, or custom development, see the commercial support options.
+</Info>
+
+<Tip>
+  If you are evaluating Oiyo for an existing UniApp project, the [project structure](/project-structure) page is a good reference for understanding how much structural change adoption requires.
+</Tip>

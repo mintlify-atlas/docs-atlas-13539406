@@ -1,0 +1,88 @@
+---
+title: "How Oiyo manages stable dependency versions"
+description: "Oiyo pins its core UniApp and Vite dependencies to tested, compatible versions—so you never hit surprise breakage from transitive upgrades."
+---
+
+One of Oiyo's key features is managing stable, tested dependency versions for UniApp, Vite, and related tools—so projects built on Oiyo don't break from transitive version upgrades. Rather than letting npm or pnpm resolve the latest compatible version of each package at install time, Oiyo pins the versions it has validated against. This means you get a working stack on day one and remain on it until you explicitly upgrade.
+
+## Engine requirements
+
+Oiyo requires specific versions of Node.js and pnpm. These constraints are enforced via the `engines` field in `package.json`:
+
+```json package.json
+{
+  "engines": {
+    "node": ">=18.0.0<22",
+    "pnpm": ">=8"
+  }
+}
+```
+
+Node 18–21 is the supported range. Node 22 introduces runtime changes that have not yet been validated against Oiyo's build pipeline. pnpm 8 or later is required; npm and yarn are not supported.
+
+## Pinned devDependencies
+
+The following `devDependencies` are shipped with an Oiyo project scaffold. Note that `vite` is pinned to an exact version—not a range:
+
+```json package.json
+{
+  "devDependencies": {
+    "@skiyee/eslint-config": "^0.1.0",
+    "@types/node": "^22.15.18",
+    "eslint": "^9.39.4",
+    "typescript": "^5.9.3",
+    "uni-unocss": "^1.0.2",
+    "vite": "5.2.8"
+  }
+}
+```
+
+`vite` at `5.2.8` is a hard pin. Oiyo's plugin layer and UniApp's internal Vite integrations have been validated against this exact version. Other `devDependencies` use caret ranges because they are less likely to introduce incompatibilities through minor bumps.
+
+## The @skiyee/oiyo dependency
+
+The runtime dependency is declared as `latest`, which is resolved at install time to the current stable release of the framework:
+
+```json package.json
+{
+  "dependencies": {
+    "@skiyee/oiyo": "latest"
+  }
+}
+```
+
+`@skiyee/oiyo` itself internally pins the UniApp build tools (including `@dcloudio/uni-*` packages) to known-good version combinations. You get Oiyo's tested dependency graph without having to declare those packages yourself.
+
+## pnpm workspace configuration
+
+Oiyo projects use pnpm with `shamefullyHoist: true` set in `pnpm-workspace.yaml`:
+
+```yaml pnpm-workspace.yaml
+onlyBuiltDependencies:
+  - core-js
+  - esbuild
+
+shamefullyHoist: true
+```
+
+UniApp's internal tooling expects certain packages to be resolvable from the project root rather than inside the isolated `node_modules/.pnpm` tree. Without hoisting, some `@dcloudio` packages fail to resolve at build time. `shamefullyHoist` flattens the dependency tree to match the layout UniApp expects.
+
+<Note>
+  If you need to override a transitive dependency—for example, to patch a security advisory—use pnpm's `overrides` field in `package.json`:
+
+  ```json package.json
+  {
+    "pnpm": {
+      "overrides": {
+        "some-transitive-package": "^2.1.0"
+      }
+    }
+  }
+  ```
+
+  This lets you control a specific transitive version without touching the hoisted dependency tree.
+</Note>
+
+<Warning>
+  Avoid manually upgrading `vite` beyond the version Oiyo pins (`5.2.8`) without checking the Oiyo release notes first. Vite minor and patch releases sometimes change internal plugin APIs that UniApp's build tools depend on, which can cause silent compilation failures or broken HMR.
+</Warning>

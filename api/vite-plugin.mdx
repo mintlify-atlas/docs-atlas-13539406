@@ -1,0 +1,79 @@
+---
+title: "OiyoPlugin: configuring Oiyo's Vite build plugin"
+description: "OiyoPlugin is the Vite plugin that enables Oiyo's auto-routing, definePageMeta compilation, and layout resolution. Import it from @skiyee/oiyo/plugin."
+---
+
+`OiyoPlugin` is the Vite plugin at the heart of Oiyo's build-time features. It compiles `definePageMeta` macros, registers pages from the file system, and wires layouts—all transparently during dev and build. Without it, `definePageMeta` is an unknown identifier, `pages.json` is not updated, and layout resolution does not work.
+
+---
+
+## Setup
+
+Add `OiyoPlugin` to your `vite.config.ts`. It must be placed **after** `UnoPlugin`:
+
+```typescript vite.config.ts
+import OiyoPlugin from '@skiyee/oiyo/plugin'
+import UnoPlugin from 'uni-unocss'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    UnoPlugin(),
+    OiyoPlugin(),
+  ],
+})
+```
+
+<Warning>
+  Plugin order matters. `OiyoPlugin` must come after `UnoPlugin`. Reversing the order can cause UnoCSS class scanning to miss classes injected by Oiyo's transforms.
+</Warning>
+
+---
+
+## Options
+
+<ParamField path="options" type="object">
+  Optional configuration object. `OiyoPlugin()` takes no required arguments in the current version—calling it with no arguments is the standard usage.
+</ParamField>
+
+<Note>
+  No configuration is required. Call `OiyoPlugin()` with no arguments.
+</Note>
+
+---
+
+## What the plugin does
+
+<Steps>
+  <Step title="Scans src/pages/ for page files">
+    On startup and on file-system changes, OiyoPlugin walks the `src/pages/` directory and builds a list of all page entry SFCs. This list is the source of truth for route registration.
+  </Step>
+  <Step title="Compiles definePageMeta() macros">
+    Each page SFC's `definePageMeta({ ... })` call is a compiler macro—it is not valid JavaScript at runtime. OiyoPlugin transforms it at build time, extracting the `layout` and `style` values and stripping the call from the output bundle.
+  </Step>
+  <Step title="Generates and updates pages.json">
+    Using the scanned page list and compiled metadata, OiyoPlugin writes `src/pages.json`. The `path` field is derived from the file path; `layout` and `style` come from `definePageMeta`. This file is regenerated on every `oiyo dev` and `oiyo build` run.
+  </Step>
+  <Step title="Resolves named layouts from src/layouts/">
+    OiyoPlugin reads `src/layouts/` to discover available layout components. When a page declares `layout: 'tabbar'`, the plugin maps that name to `src/layouts/tabbar.vue` and registers the wiring so `OiyoLayout` can activate it at runtime.
+  </Step>
+  <Step title="Injects OiyoLayout and OiyoPage as global components">
+    Both `OiyoLayout` and `OiyoPage` are registered globally—you use them in templates without any import statement.
+  </Step>
+</Steps>
+
+---
+
+## Interaction with oiyo CLI
+
+The plugin runs as part of the standard Vite lifecycle, but the `oiyo` CLI commands also invoke parts of it directly:
+
+| Command | What happens |
+|---------|-------------|
+| `oiyo prepare` | Runs page scanning and writes an initial `pages.json` (also runs on `postinstall`) |
+| `oiyo dev` | Starts Vite dev server with OiyoPlugin active; file changes trigger incremental `pages.json` updates |
+| `oiyo build` | Full production build; OiyoPlugin transforms all `definePageMeta` macros and writes the final `pages.json` |
+
+<Tip>
+  If `pages.json` looks stale or a new page is not being picked up, run `oiyo prepare` manually to force a rescan.
+</Tip>
